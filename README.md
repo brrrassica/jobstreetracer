@@ -87,11 +87,23 @@ opt in.
 
 ## Install
 
+**From the git tag (stable release):**
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install "jobstreetracer @ git+https://github.com/brrrassica/jobstreetracer@v0.1.0"
+```
+
+**From a clone (development):**
+
 ```bash
 cd ~/projects/jobstreetracer
 python3 -m venv .venv
 .venv/bin/pip install -e .
 ```
+
+This project is not published to PyPI (it is an unofficial personal tool);
+the git tag above is the supported install path.
 
 ## Quick start
 
