@@ -21,7 +21,8 @@ The repo also ships an installable Progressive Web App at:
 It is a local-first dashboard for the data the Python scraper produces: saved
 search terms, a filterable/sortable listing cache, job detail with notes/tags and
 an application pipeline, Telegram settings, and optional OS toasts for new
-matches.
+matches. See [docs/PWA.md](docs/PWA.md) for the feed schema, bridge API,
+IndexedDB layout, notification guarantees, and troubleshooting.
 
 The Pages site is static, so it cannot scrape JobStreet by itself. Pick one of
 these data paths:
@@ -290,7 +291,8 @@ src/jobstreetracer/
 web/            # Vite + React + TypeScript PWA (GitHub Pages)
 tests/          # offline unit tests
 research/       # apify-client store/pricing probe
-deploy/         # systemd units and crontab example
+deploy/         # systemd units, crontab, PWA bridge autostart
+docs/           # endpoint notes + PWA guide
 .github/        # CI (ruff + pytest + PWA build) and Pages deploy
 ```
 
@@ -304,10 +306,13 @@ npm run build    # static output in web/dist
 ```
 
 The Pages workflow (`.github/workflows/pages.yml`) builds `web/` and deploys it
-with the official Pages actions. In the GitHub repo, set **Settings → Pages →
-Source** to **GitHub Actions**. The app is built with base
+with the official Pages actions. The repository is public and Pages is enabled
+with **Source: GitHub Actions**. The app is built with base
 `/jobstreetracer/`, so keep the repository name or update `vite.config.ts` and the
 manifest/`index.html` paths together.
+
+See [`web/README.md`](web/README.md) for the frontend quick start and
+[`docs/PWA.md`](docs/PWA.md) for the full PWA guide.
 
 
 ## Limits and etiquette
@@ -329,3 +334,11 @@ manifest/`index.html` paths together.
 - If JobStreet changes its markup or query parameters, update
   `docs/ENDPOINTS.md` and the selectors in `parsing.py`.
 - JobStreet may rate-limit or block; back off rather than retrying harder.
+
+## License
+
+MIT © 2026 JobStreetracer contributors. See [LICENSE](LICENSE).
+
+This is an unofficial personal project, not affiliated with JobStreet or SEEK.
+JobStreet data remains subject to JobStreet's terms; do not republish it.
+
