@@ -1,0 +1,38 @@
+# Copy to config.toml and edit the searches.
+# Relative paths are resolved against this file's directory.
+
+[app]
+locale = "en-ID"
+site_key = "ID-Main"
+delay_seconds = 1.0          # minimum gap between HTTP requests
+timeout_seconds = 30
+enrich_details = true        # fetch full description from each job page
+output_dir = "data"
+db_path = "data/jobs.db"
+notify_max_jobs = 40         # cap Telegram messages per run
+schedule = "*/15 * * * *"     # every 15 minutes (used by `jobstreetracer schedule`)
+timezone = "Asia/Jakarta"
+notify_on_first_run = false  # seed existing results silently; alert only on unseen jobs
+
+[[search]]
+name = "data-engineer-jakarta"
+keywords = '"data engineer"'  # quotes = exact phrase, much less noise
+where = "Jakarta"
+sort = "Relevance"           # or "ListedDate" for newest-first (noisier)
+daterange = 14               # only jobs from the last 14 days
+page_size = 30               # API accepts up to 100
+max_pages = 3
+enrich = true
+enabled = true
+
+# Add more searches by repeating the block:
+#
+# [[search]]
+# name = "head-of-technology"
+# keywords = "head of technology"
+# where = "Jakarta"
+# sort = "ListedDate"
+# daterange = 30
+# page_size = 30
+# max_pages = 2
+# enrich = true

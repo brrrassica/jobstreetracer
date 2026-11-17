@@ -1,0 +1,5 @@
+# Plain cron alternative to the systemd timer / built-in scheduler.
+# Install with: crontab -e
+#
+# Every 15 minutes.
+*/15 * * * * cd /home/sam/projects/jobstreetracer && flock -n /tmp/jobstreetracer.lock .venv/bin/jobstreetracer run >> data/cron.log 2>&1

@@ -1,0 +1,12 @@
+[Unit]
+Description=JobStreetracer scrape run
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/sam/projects/jobstreetracer
+EnvironmentFile=-/home/sam/projects/jobstreetracer/.env
+ExecStart=/home/sam/projects/jobstreetracer/.venv/bin/jobstreetracer run
+Nice=10
+IOSchedulingClass=idle
