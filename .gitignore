@@ -9,3 +9,5 @@ dist/
 config.toml
 data/
 *.log
+node_modules/
+*.tsbuildinfo

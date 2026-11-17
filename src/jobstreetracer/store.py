@@ -409,6 +409,22 @@ class JobStore:
             "last_run": dict(last_run) if last_run else None,
         }
 
+    def all_jobs(self) -> list[Job]:
+        rows = self.conn.execute(
+            "SELECT * FROM jobs ORDER BY first_seen DESC"
+        ).fetchall()
+        return [_row_to_job(row) for row in rows]
+
+    def recent_runs(self, limit: int = 20) -> list[dict[str, Any]]:
+        rows = self.conn.execute(
+            "SELECT * FROM runs ORDER BY id DESC LIMIT ?", (max(1, limit),)
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def all_search_state(self) -> dict[str, dict[str, Any]]:
+        rows = self.conn.execute("SELECT * FROM search_state").fetchall()
+        return {row["name"]: dict(row) for row in rows}
+
     def export(self, path: str | Path, *, fmt: str = "jsonl", only_new: bool = False) -> int:
         target = Path(path).expanduser()
         target.parent.mkdir(parents=True, exist_ok=True)

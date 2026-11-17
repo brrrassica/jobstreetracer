@@ -12,6 +12,66 @@ service.
 > JobStreet's terms before using it, keep the request rate low, and use it for
 > personal job hunting rather than republishing their data.
 
+## PWA (GitHub Pages)
+
+The repo also ships an installable Progressive Web App at:
+
+**https://brrrassica.github.io/jobstreetracer/**
+
+It is a local-first dashboard for the data the Python scraper produces: saved
+search terms, a filterable/sortable listing cache, job detail with notes/tags and
+an application pipeline, Telegram settings, and optional OS toasts for new
+matches.
+
+The Pages site is static, so it cannot scrape JobStreet by itself. Pick one of
+these data paths:
+
+1. **Local bridge (recommended, no daemon):**
+   ```bash
+   cd ~/projects/jobstreetracer
+   .venv/bin/jobstreetracer bridge --static web/dist --open
+   ```
+   Opens `http://127.0.0.1:8765/jobstreetracer/` and exposes
+   `/api/feed`, `/api/refresh` (run one scrape now) and `/api/telegram` (CORS-safe
+   relay). Bind it to localhost only. Start it from your desktop autostart if you
+   want the installed app to keep syncing while you are logged in.
+2. **Published feed:** `jobstreetracer publish --out data/feed.json`, then point
+   the PWA's Settings at a URL that serves that JSON. Keep private job data out of
+   the public repo/Pages site.
+3. **Manual import:** export with `jobstreetracer export` and use
+   *Settings → Import JSONL / JSON feed* in the PWA.
+
+The PWA stores searches, listings, tracking notes, settings and the Telegram bot
+token in this browser profile (IndexedDB). It never writes to the repo or Pages.
+Chrome/Chromium can install it from the toolbar or **Settings → Install app**.
+
+### Notifications and “run at boot”
+
+The installed app polls the configured feed while it is running and shows an OS
+toast for newly seen job IDs. For alerts while logged in, let Chromium/your
+desktop start the installed app on login and keep background apps running. This
+is a normal app process, not a system service; toasts stop if you fully quit the
+browser. For guaranteed scraping while everything is closed, keep the Python
+scheduler/timer or the bridge running (autostart entry), or rely on Telegram.
+
+Autostart the bridge (so “run scraper now” and feeds work after login):
+
+- **Linux:** copy `deploy/jobstreetracer-bridge.desktop` to
+  `~/.config/autostart/` and adjust the path if needed.
+- **Windows:** put a shortcut to `deploy\jobstreetracer-bridge.cmd` in
+  `shell:startup` (Win+R → type `shell:startup`). It starts minimized.
+
+The installed PWA itself can also be allowed to start on login, depending on
+Chromium/OS settings; keep it open (minimized) for periodic feed polling and OS
+toasts.
+
+
+Telegram calls made directly from the browser are often blocked by CORS. Set the
+bridge URL in Settings to relay **Send test** and job messages through
+`/api/telegram`. The token is kept locally and is omitted from exports unless you
+opt in.
+
+
 ## Install
 
 ```bash
@@ -106,6 +166,8 @@ Pick one scheduler, not all three.
 | `jobstreetracer jobs --limit 20` | Show recent stored jobs |
 | `jobstreetracer stats` | Database and last-run stats |
 | `jobstreetracer export --format csv --out data/jobs.csv` | Export everything |
+| `jobstreetracer publish --out data/feed.json` | Export a PWA feed (searches + jobs + runs) |
+| `jobstreetracer bridge --static web/dist` | Localhost feed/refresh/Telegram endpoints for the PWA |
 | `jobstreetracer doctor` | Check config, API, and Telegram |
 
 Useful flags for `run`:
@@ -222,12 +284,31 @@ src/jobstreetracer/
   notify.py     # Telegram formatting + delivery
   runner.py     # one scrape run
   scheduler.py  # APScheduler cron loop
+  publish.py    # JSON feed for the PWA
+  bridge.py     # localhost feed/refresh/Telegram bridge
   cli.py        # command line
+web/            # Vite + React + TypeScript PWA (GitHub Pages)
 tests/          # offline unit tests
 research/       # apify-client store/pricing probe
 deploy/         # systemd units and crontab example
-.github/        # CI workflow (ruff lint + pytest on Python 3.11-3.13)
+.github/        # CI (ruff + pytest + PWA build) and Pages deploy
 ```
+
+## Develop and deploy the PWA
+
+```bash
+cd web
+npm install
+npm run dev      # http://127.0.0.1:5173/jobstreetracer/
+npm run build    # static output in web/dist
+```
+
+The Pages workflow (`.github/workflows/pages.yml`) builds `web/` and deploys it
+with the official Pages actions. In the GitHub repo, set **Settings → Pages →
+Source** to **GitHub Actions**. The app is built with base
+`/jobstreetracer/`, so keep the repository name or update `vite.config.ts` and the
+manifest/`index.html` paths together.
+
 
 ## Limits and etiquette
 

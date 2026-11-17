@@ -15,6 +15,7 @@ from .client import JobStreetClient
 from .config import ConfigError, load_config, write_default_config
 from .models import Job
 from .notify import TelegramNotifier
+from .publish import write_feed
 from .runner import run_once
 from .scheduler import serve
 from .store import JobStore
@@ -285,6 +286,39 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def cmd_publish(args: argparse.Namespace) -> int:
+    config = load_config(args.config)
+    target, feed = write_feed(
+        config,
+        args.out,
+        include_descriptions=not args.no_descriptions,
+        pretty=args.pretty,
+        run_limit=args.runs,
+    )
+    jobs = len(feed.get("jobs") or [])
+    searches = len(feed.get("searches") or [])
+    console.print(
+        f"[green]Published[/green] {target} ({jobs} job(s), {searches} search(es))"
+    )
+    if args.stdout:
+        console.print_json(data=feed)
+    return 0
+
+
+def cmd_bridge(args: argparse.Namespace) -> int:
+    from .bridge import serve_bridge
+
+    _setup_logging(args.verbose)
+    serve_bridge(
+        args.config,
+        host=args.host,
+        port=args.port,
+        static_dir=args.static,
+        open_browser=args.open,
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="jobstreetracer",
@@ -352,6 +386,29 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument("--format", choices=["jsonl", "csv"], default="jsonl")
     export.add_argument("--new-only", action="store_true")
     export.set_defaults(func=cmd_export)
+
+    publish = sub.add_parser(
+        "publish", help="export a PWA feed (data/feed.json)", parents=[common]
+    )
+    publish.add_argument("--out", default="data/feed.json")
+    publish.add_argument(
+        "--no-descriptions",
+        action="store_true",
+        help="omit full job descriptions to keep the feed small",
+    )
+    publish.add_argument("--pretty", action="store_true")
+    publish.add_argument("--runs", type=int, default=20, help="recent runs to include")
+    publish.add_argument("--stdout", action="store_true", help="also print the feed")
+    publish.set_defaults(func=cmd_publish)
+
+    bridge = sub.add_parser(
+        "bridge", help="serve feed/refresh/Telegram endpoints for the PWA", parents=[common]
+    )
+    bridge.add_argument("--host", default="127.0.0.1")
+    bridge.add_argument("--port", type=int, default=8765)
+    bridge.add_argument("--static", default=None, help="built PWA directory (web/dist)")
+    bridge.add_argument("--open", action="store_true")
+    bridge.set_defaults(func=cmd_bridge)
 
     doctor = sub.add_parser("doctor", help="check config, API, and Telegram", parents=[common])
     doctor.set_defaults(func=cmd_doctor)

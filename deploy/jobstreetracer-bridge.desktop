@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=JobStreetracer Bridge
+Comment=Localhost feed, refresh and Telegram relay for the JobStreetracer PWA
+# Edit the path if the project is not at ~/projects/jobstreetracer.
+Exec=/bin/sh -c 'cd "$HOME/projects/jobstreetracer" && exec .venv/bin/jobstreetracer bridge --static web/dist'
+Terminal=false
+X-GNOME-Autostart-enabled=true
+NoDisplay=true

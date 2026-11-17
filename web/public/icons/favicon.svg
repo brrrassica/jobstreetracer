@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#0a0f22"/>
+  <circle cx="32" cy="29" r="20" fill="none" stroke="#5eead4" stroke-opacity=".35" stroke-width="2"/>
+  <circle cx="32" cy="29" r="13" fill="none" stroke="#5eead4" stroke-opacity=".55" stroke-width="2"/>
+  <circle cx="32" cy="27" r="6" fill="#a3e635"/>
+  <circle cx="32" cy="27" r="2.5" fill="#0a0f22"/>
+  <text x="32" y="54" font-family="sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="#ecf5ff">JSR</text>
+</svg>
