@@ -24,21 +24,26 @@ an application pipeline, Telegram settings, and optional OS toasts for new
 matches. See [docs/PWA.md](docs/PWA.md) for the feed schema, bridge API,
 IndexedDB layout, notification guarantees, and troubleshooting.
 
-The Pages site is static, so it cannot scrape JobStreet by itself. Pick one of
-these data paths:
+The Pages site is static, so it cannot scrape JobStreet by itself. Open the
+**Setup wizard** in the app for guided configuration (detect/connect bridge,
+choose a feed, request notifications, and enable autostart). Pick one of these
+data paths:
 
 1. **Local bridge (recommended, no daemon):**
    ```bash
    cd ~/projects/jobstreetracer
+   .venv/bin/jobstreetracer setup --enable-autostart
    .venv/bin/jobstreetracer bridge --static web/dist --open
    ```
-   Opens `http://127.0.0.1:8765/jobstreetracer/` and exposes
-   `/api/feed`, `/api/refresh` (run one scrape now) and `/api/telegram` (CORS-safe
-   relay). Bind it to localhost only. Start it from your desktop autostart if you
-   want the installed app to keep syncing while you are logged in.
+   The wizard can detect the bridge at `http://127.0.0.1:8765`, save the feed,
+   and toggle login autostart with one click when connected. The bridge exposes
+   `/api/feed`, `/api/refresh` (run one scrape now), `/api/telegram` (CORS-safe
+   relay), and setup endpoints for status/autostart. Bind it to localhost only.
+   If the bridge is not installed yet, the wizard shows a copyable bootstrap
+   command.
 2. **Published feed:** `jobstreetracer publish --out data/feed.json`, then point
-   the PWA's Settings at a URL that serves that JSON. Keep private job data out of
-   the public repo/Pages site.
+   the PWA's Settings/wizard at a URL that serves that JSON. Keep private job
+   data out of the public repo/Pages site.
 3. **Manual import:** export with `jobstreetracer export` and use
    *Settings → Import JSONL / JSON feed* in the PWA.
 
@@ -57,10 +62,17 @@ scheduler/timer or the bridge running (autostart entry), or rely on Telegram.
 
 Autostart the bridge (so “run scraper now” and feeds work after login):
 
-- **Linux:** copy `deploy/jobstreetracer-bridge.desktop` to
+- **One click (when bridge is running):** open the PWA Setup wizard and enable
+  autostart, or run `jobstreetracer setup --enable-autostart`.
+- **Linux (manual):** copy `deploy/jobstreetracer-bridge.desktop` to
   `~/.config/autostart/` and adjust the path if needed.
-- **Windows:** put a shortcut to `deploy\jobstreetracer-bridge.cmd` in
+- **Windows (manual):** put a shortcut to `deploy\jobstreetracer-bridge.cmd` in
   `shell:startup` (Win+R → type `shell:startup`). It starts minimized.
+- **macOS:** `jobstreetracer setup --enable-autostart` writes a LaunchAgent plist.
+
+These configure user-session startup (no elevation). If you need a true boot-time
+service before login, use an elevated system service (e.g. the Linux template in
+`deploy/jobstreetracer.service` or a Windows scheduled task "At startup").
 
 The installed PWA itself can also be allowed to start on login, depending on
 Chromium/OS settings; keep it open (minimized) for periodic feed polling and OS
@@ -169,6 +181,7 @@ Pick one scheduler, not all three.
 | `jobstreetracer export --format csv --out data/jobs.csv` | Export everything |
 | `jobstreetracer publish --out data/feed.json` | Export a PWA feed (searches + jobs + runs) |
 | `jobstreetracer bridge --static web/dist` | Localhost feed/refresh/Telegram endpoints for the PWA |
+| `jobstreetracer setup --enable-autostart` | Check bridge readiness and configure login autostart |
 | `jobstreetracer doctor` | Check config, API, and Telegram |
 
 Useful flags for `run`:

@@ -34,6 +34,7 @@ from . import __version__
 from .config import ConfigError, load_config
 from .publish import build_feed
 from .runner import run_once
+from . import setup as bridge_setup
 
 log = logging.getLogger(__name__)
 
@@ -112,6 +113,9 @@ class BridgeHandler(SimpleHTTPRequestHandler):
         if path == "/api/health":
             self._json(HTTPStatus.OK, {"ok": True, "version": __version__})
             return
+        if path == "/api/setup/status":
+            self._serve_setup_status()
+            return
         if path == "/api/feed":
             self._serve_feed()
             return
@@ -144,6 +148,8 @@ class BridgeHandler(SimpleHTTPRequestHandler):
             self._refresh(body)
         elif path == "/api/telegram":
             self._telegram(body)
+        elif path == "/api/setup/autostart":
+            self._autostart(body)
         else:
             self._json(HTTPStatus.NOT_FOUND, {"error": "unknown endpoint"})
 
@@ -234,6 +240,36 @@ class BridgeHandler(SimpleHTTPRequestHandler):
                 errors.append({"chat_id": chat_id, "error": str(exc)})
         status = HTTPStatus.OK if delivered else HTTPStatus.BAD_GATEWAY
         self._json(status, {"ok": bool(delivered), "delivered": delivered, "errors": errors})
+
+    def _serve_setup_status(self) -> None:
+        try:
+            host, port = self.server.server_address  # type: ignore[misc]
+            status = bridge_setup.setup_status(host=str(host), port=int(port))
+            self._json(HTTPStatus.OK, status)
+        except Exception as exc:
+            log.exception("setup status failed")
+            self._json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
+
+    def _autostart(self, body: dict[str, Any]) -> None:
+        enabled = body.get("enabled", True)
+        method = str(body.get("method") or "auto")
+        try:
+            host, port = self.server.server_address  # type: ignore[misc]
+            if enabled:
+                state = bridge_setup.enable_autostart(
+                    host=str(host),
+                    port=int(port),
+                    config_path=self.state.config_path,
+                    static_dir=self.state.static_dir,
+                    method=method,
+                )
+            else:
+                state = bridge_setup.disable_autostart()
+            status = HTTPStatus.OK if not state.error else HTTPStatus.BAD_REQUEST
+            self._json(status, {"ok": not state.error, "autostart": state.to_dict()})
+        except Exception as exc:
+            log.exception("autostart action failed")
+            self._json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(exc)})
 
     # -- static files --------------------------------------------------
     def _serve_static(self, path: str) -> None:

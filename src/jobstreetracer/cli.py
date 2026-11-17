@@ -18,6 +18,12 @@ from .notify import TelegramNotifier
 from .publish import write_feed
 from .runner import run_once
 from .scheduler import serve
+from .setup import (
+    disable_autostart,
+    enable_autostart,
+    install_command_text,
+    setup_status,
+)
 from .store import JobStore
 
 console = Console()
@@ -319,6 +325,70 @@ def cmd_bridge(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_setup(args: argparse.Namespace) -> int:
+    if args.install_command:
+        print(install_command_text())
+        return 0
+
+    if args.enable_autostart or args.disable_autostart:
+        if args.enable_autostart:
+            state = enable_autostart(
+                host=args.host,
+                port=args.port,
+                config_path=args.config,
+                method=args.method or "auto",
+            )
+        else:
+            state = disable_autostart()
+        if args.json:
+            print(json.dumps(state.to_dict(), indent=2))
+        elif state.error:
+            console.print(f"[red]Autostart error:[/red] {state.error}")
+            if state.detail:
+                console.print(state.detail)
+            return 1
+        else:
+            verb = "enabled" if state.enabled else "disabled"
+            console.print(f"[green]Autostart {verb}[/green] ({state.method})")
+            if state.path:
+                console.print(f"  Path: {state.path}")
+            if state.detail:
+                console.print(f"  {state.detail}")
+        return 0
+
+    status = setup_status(host=args.host, port=args.port)
+    if args.json:
+        print(json.dumps(status, indent=2))
+        return 0
+
+    console.print(f"JobStreetracer setup ({status['platform']})")
+    console.print(f"  Root:    {status['root']}")
+    console.print(f"  Python:  {status['python']}")
+    console.print(f"  Config:  {status['config_path'] or '[yellow]not found[/yellow] (run: jobstreetracer init)'}")
+    console.print(f"  Static:  {status['static_dir'] or '[yellow]not found[/yellow] (build web/ or serve Pages URL)'}")
+    console.print(f"  Bridge:  {status['bridge_url']}")
+    console.print(f"  Feed:    {status['feed_url']}")
+    console.print(f"  PWA:     {status['pwa_url']}")
+    auto = status["autostart"]
+    console.print(
+        f"  Autostart: {'[green]enabled[/green]' if auto['enabled'] else '[yellow]disabled[/yellow]'} "
+        f"({auto['method']})"
+    )
+    if auto.get("path"):
+        console.print(f"    Path: {auto['path']}")
+    if auto.get("detail"):
+        console.print(f"    {auto['detail']}")
+    if auto.get("error"):
+        console.print(f"    [red]{auto['error']}[/red]")
+    console.print("\nCommands:")
+    console.print(f"  {status['command_string']}")
+    console.print("\nQuick actions:")
+    console.print("  Enable autostart:  jobstreetracer setup --enable-autostart")
+    console.print("  Disable autostart: jobstreetracer setup --disable-autostart")
+    console.print("  Show install cmd:  jobstreetracer setup --install-command")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="jobstreetracer",
@@ -409,6 +479,23 @@ def build_parser() -> argparse.ArgumentParser:
     bridge.add_argument("--static", default=None, help="built PWA directory (web/dist)")
     bridge.add_argument("--open", action="store_true")
     bridge.set_defaults(func=cmd_bridge)
+
+    setup = sub.add_parser(
+        "setup", help="check bridge readiness and configure autostart", parents=[common]
+    )
+    setup.add_argument("--host", default="127.0.0.1")
+    setup.add_argument("--port", type=int, default=8765)
+    setup.add_argument("--enable-autostart", action="store_true")
+    setup.add_argument("--disable-autostart", action="store_true")
+    setup.add_argument(
+        "--method",
+        choices=["auto", "linux-login", "linux-user-service", "windows-login", "macos-login"],
+        default="auto",
+        help="autostart mechanism (default: platform-appropriate)",
+    )
+    setup.add_argument("--install-command", action="store_true", help="print a bootstrap command")
+    setup.add_argument("--json", action="store_true")
+    setup.set_defaults(func=cmd_setup)
 
     doctor = sub.add_parser("doctor", help="check config, API, and Telegram", parents=[common])
     doctor.set_defaults(func=cmd_doctor)

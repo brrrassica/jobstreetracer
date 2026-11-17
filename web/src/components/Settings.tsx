@@ -22,6 +22,7 @@ interface Props {
   onRequestNotifications: () => void;
   onTestTelegram: (text: string, telegram: SettingsType["telegram"], bridgeUrl: string) => Promise<string>;
   onToast: (message: string, error?: boolean) => void;
+  onSetup: () => void;
 }
 
 export function Settings({
@@ -43,6 +44,7 @@ export function Settings({
   onRequestNotifications,
   onTestTelegram,
   onToast,
+  onSetup,
 }: Props) {
   const [draft, setDraft] = useState(settings);
   const [showToken, setShowToken] = useState(false);
@@ -111,6 +113,7 @@ export function Settings({
           </p>
         </div>
         <div className="head-actions">
+          <button className="btn" onClick={onSetup}>Setup wizard</button>
           <button className="btn btn-primary" onClick={save}>
             Save settings
           </button>
@@ -124,7 +127,9 @@ export function Settings({
         </div>
         <p className="muted">
           The PWA is static. Use the local bridge for live data and “run scraper now”, or point at any JSON
-          feed / <code>data/feed.json</code> URL. Importing a file always works.
+          feed / <code>data/feed.json</code> URL. Importing a file always works. The{" "}
+          <button className="link-btn" onClick={onSetup}>setup wizard</button> can detect the bridge, save the
+          feed, and enable autostart for you.
         </p>
         <div className="form-grid">
           <label className="field">

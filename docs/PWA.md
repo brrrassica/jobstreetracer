@@ -185,15 +185,35 @@ system daemon. It serves:
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/health` | `{ "ok": true, "version": "…" }` |
+| `GET` | `/api/setup/status` | Setup/readiness info (paths, command, autostart state) |
 | `GET` | `/api/feed` | Current feed JSON |
 | `POST` | `/api/refresh` | Run one scrape cycle; optional `{ "search": ["name"], "max_pages": 3, "no_enrich": true, "no_notify": false }` |
 | `POST` | `/api/telegram` | Relay `{ token, chat_ids, topic_id, text }` to Telegram |
+| `POST` | `/api/setup/autostart` | `{ "enabled": true|false, "method"?: "auto" }` — enable/disable user-session autostart |
 | `GET` | `/jobstreetracer/…` | Built PWA (when `--static web/dist` is passed) |
 
 POST requests require the `X-JSR-Bridge: 1` header. CORS allows
 `https://brrrassica.github.io` and loopback origins, and responds to Chrome's
 Private Network Access preflight. The bridge has no authentication and must stay
-bound to localhost. Run it at login if you want live sync:
+bound to localhost.
+
+## Setup wizard and autostart
+
+The PWA includes a **Setup wizard** (Dashboard/Settings) that can probe for a
+local bridge, save feed/bridge settings, request notification permission, and
+toggle autostart when connected.
+
+CLI helpers:
+
+- `jobstreetracer setup` — show readiness (config/static/command/autostart)
+- `jobstreetracer setup --enable-autostart` / `--disable-autostart`
+- `jobstreetracer setup --install-command` — print a bootstrap command
+
+Autostart targets user-session startup (no elevation): Linux desktop autostart
+(or `--method linux-user-service`), Windows current-user Run entry, macOS
+LaunchAgent. For true boot-time startup before login, use an elevated system
+service (e.g. `deploy/jobstreetracer.service` on Linux or a Windows scheduled
+task "At startup"). Manual templates remain in `deploy/`:
 
 - Linux: `deploy/jobstreetracer-bridge.desktop` → `~/.config/autostart/`
 - Windows: shortcut `deploy\jobstreetracer-bridge.cmd` → `shell:startup`

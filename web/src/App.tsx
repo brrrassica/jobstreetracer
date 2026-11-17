@@ -33,6 +33,7 @@ import { Listings } from "./components/Listings";
 import { Searches } from "./components/Searches";
 import { Settings } from "./components/Settings";
 import { JobDetail } from "./components/JobDetail";
+import { SetupWizard } from "./components/SetupWizard";
 
 const VIEWS = ["dashboard", "listings", "searches", "settings"] as const;
 type View = (typeof VIEWS)[number];
@@ -69,6 +70,7 @@ export default function App() {
   const [toast, setToast] = useState<{ message: string; error: boolean } | null>(null);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
+  const [showWizard, setShowWizard] = useState(false);
 
   const snapshotRef = useRef<Snapshot | null>(null);
   const busyRef = useRef(false);
@@ -541,6 +543,7 @@ export default function App() {
             onRefresh={() => void refreshNow()}
             onNavigate={navigate}
             onSelect={selectJob}
+            onSetup={() => setShowWizard(true)}
           />
         )}
         {view === "listings" && (
@@ -589,6 +592,7 @@ export default function App() {
             onRequestNotifications={() => void requestNotifications()}
             onTestTelegram={testTelegram}
             onToast={notify}
+            onSetup={() => setShowWizard(true)}
           />
         )}
         {selected && (
@@ -611,6 +615,18 @@ export default function App() {
           </div>
         )}
       </main>
+
+      <SetupWizard
+        open={showWizard}
+        settings={snapshot.settings}
+        canInstall={Boolean(installPrompt)}
+        onClose={() => setShowWizard(false)}
+        onSaveSettings={(settings) => void saveSettingsValue(settings)}
+        onSync={() => void syncNow()}
+        onRequestNotifications={() => void requestNotifications()}
+        onInstall={install}
+        onToast={notify}
+      />
 
       {toast && (
         <div className={`toast ${toast.error ? "toast-error" : ""}`} role="status">

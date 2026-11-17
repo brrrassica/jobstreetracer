@@ -11,6 +11,7 @@ interface Props {
   onRefresh: () => void;
   onNavigate: (view: string) => void;
   onSelect: (job: Job) => void;
+  onSetup: () => void;
 }
 
 export function Dashboard({
@@ -23,6 +24,7 @@ export function Dashboard({
   onRefresh,
   onNavigate,
   onSelect,
+  onSetup,
 }: Props) {
   const newJobs = jobs.filter((job) => job.isNew);
   const activeSearches = searches.filter((search) => search.enabled);
@@ -43,6 +45,7 @@ export function Dashboard({
           </p>
         </div>
         <div className="head-actions">
+          <button className="btn" onClick={onSetup}>Setup wizard</button>
           <button className="btn" onClick={onSync} disabled={syncing || !source}>
             {syncing ? "Syncing…" : "Sync feed"}
           </button>
@@ -54,10 +57,13 @@ export function Dashboard({
 
       {!source && (
         <div className="notice">
-          <strong>No feed configured yet.</strong> Point Settings at a <code>data/feed.json</code> URL or run
-          the local bridge (<code>jobstreetracer bridge --static web/dist</code>) so the app has listings to
-          show. You can also import a JSONL export below.
+          <strong>No feed configured yet.</strong> Use the setup wizard to connect the local bridge, choose a
+          feed, and enable autostart in a few clicks. You can also configure everything manually in Settings or
+          import a JSONL export.
           <div className="notice-actions">
+            <button className="btn btn-small btn-primary" onClick={onSetup}>
+              Open setup wizard
+            </button>
             <button className="btn btn-small" onClick={() => onNavigate("settings")}>
               Open settings
             </button>
