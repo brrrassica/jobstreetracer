@@ -1,0 +1,122 @@
+{
+  "schema": 1,
+  "generated_at": "2026-01-01T00:00:00+00:00",
+  "app": {
+    "version": "0.1.0",
+    "locale": "en-ID",
+    "site_key": "ID-Main",
+    "schedule": "*/15 * * * *",
+    "timezone": "Asia/Jakarta",
+    "stats": {
+      "total_jobs": 2,
+      "unnotified": 1,
+      "new_today": 0,
+      "last_run": {
+        "id": 1,
+        "started_at": "2025-12-31T23:00:00+00:00",
+        "finished_at": "2026-01-01T00:00:00+00:00",
+        "searches": 1,
+        "scanned": 2,
+        "new_jobs": 2,
+        "notified": 0,
+        "errors": 0
+      }
+    }
+  },
+  "searches": [
+    {
+      "name": "contract-search",
+      "keywords": "\"data engineer\"",
+      "where": "Jakarta",
+      "sort": "Date",
+      "daterange": 14,
+      "worktype": "",
+      "page_size": 30,
+      "max_pages": 3,
+      "max_jobs": 0,
+      "enrich": true,
+      "enabled": true,
+      "notify_on_first_run": false
+    }
+  ],
+  "search_state": {
+    "contract-search": {
+      "name": "contract-search",
+      "first_run_at": "2026-01-01T00:00:00+00:00",
+      "last_run_at": "2026-01-01T00:00:00+00:00",
+      "baseline_at": "2026-01-01T00:00:00+00:00"
+    }
+  },
+  "runs": [
+    {
+      "id": 1,
+      "started_at": "2025-12-31T23:00:00+00:00",
+      "finished_at": "2026-01-01T00:00:00+00:00",
+      "searches": 1,
+      "scanned": 2,
+      "new_jobs": 2,
+      "notified": 0,
+      "errors": 0
+    }
+  ],
+  "jobs": [
+    {
+      "id": "2",
+      "title": "Senior Data Engineer 2",
+      "company": "Acme Corp",
+      "company_id": "co-2",
+      "location": "Jakarta Selatan, Jakarta",
+      "salary": "Rp 20.000.000 - Rp 30.000.000",
+      "listing_date": "2026-01-01T00:00:00Z",
+      "listing_date_display": "1 day ago",
+      "posted_display": "1d ago",
+      "teaser": "Join our data platform team building petabyte pipelines.",
+      "work_types": "Full time",
+      "work_arrangement": "Hybrid",
+      "classification": "Information & Communication Technology",
+      "subclassification": "Data Science & Machine Learning",
+      "url": "https://id.jobstreet.com/id/job/2",
+      "role_id": "12345",
+      "is_featured": false,
+      "is_verified": true,
+      "is_link_out": false,
+      "description_html": "",
+      "description_text": "",
+      "expires_at": "2026-02-01T00:00:00Z",
+      "apply_url": "https://id.jobstreet.com/apply/2",
+      "search_name": "contract-search",
+      "first_seen": "2026-01-01T00:00:00+00:00",
+      "last_seen": "2026-01-01T00:00:00+00:00",
+      "is_new": false
+    },
+    {
+      "id": "1",
+      "title": "Senior Data Engineer 1",
+      "company": "Acme Corp",
+      "company_id": "co-1",
+      "location": "Jakarta Selatan, Jakarta",
+      "salary": "Rp 20.000.000 - Rp 30.000.000",
+      "listing_date": "2026-01-01T00:00:00Z",
+      "listing_date_display": "1 day ago",
+      "posted_display": "1d ago",
+      "teaser": "Join our data platform team building petabyte pipelines.",
+      "work_types": "Full time",
+      "work_arrangement": "Hybrid",
+      "classification": "Information & Communication Technology",
+      "subclassification": "Data Science & Machine Learning",
+      "url": "https://id.jobstreet.com/id/job/1",
+      "role_id": "12345",
+      "is_featured": true,
+      "is_verified": true,
+      "is_link_out": false,
+      "description_html": "<p>A rich description for job 1.</p>",
+      "description_text": "A rich description for job 1 with keywords and responsibilities.",
+      "expires_at": "2026-02-01T00:00:00Z",
+      "apply_url": "https://id.jobstreet.com/apply/1",
+      "search_name": "contract-search",
+      "first_seen": "2026-01-01T00:00:00+00:00",
+      "last_seen": "2026-01-01T00:00:00+00:00",
+      "is_new": false
+    }
+  ]
+}
