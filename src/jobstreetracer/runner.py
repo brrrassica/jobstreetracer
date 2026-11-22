@@ -75,6 +75,7 @@ def scrape_search(
     max_pages: int | None = None,
     enrich: bool | None = None,
     notify_first_run: bool | None = None,
+    dry_run: bool = False,
 ) -> tuple[list[Job], SearchOutcome]:
     outcome = SearchOutcome(name=search.name)
     enrich = search.enrich if enrich is None else enrich
@@ -99,12 +100,27 @@ def scrape_search(
     except Exception as exc:
         outcome.errors += 1
         log.error("[%s] search failed: %s", search.name, exc)
-        return [], outcome
 
     jobs = list(jobs_by_id.values())
     outcome.scanned = len(jobs)
+    if outcome.errors and not jobs:
+        return [], outcome
     first_run = store.get_search_state(search.name) is None
-    new_jobs = store.upsert_jobs(jobs)
+    if dry_run:
+        existing_ids: set[str] = set()
+        ids = list(jobs_by_id)
+        for start in range(0, len(ids), 900):
+            chunk = ids[start : start + 900]
+            placeholders = ",".join("?" for _ in chunk)
+            rows = store.conn.execute(
+                f"SELECT id FROM jobs WHERE id IN ({placeholders})", chunk
+            ).fetchall()
+            existing_ids.update(row["id"] for row in rows)
+        new_jobs = [job for job in jobs if job.id not in existing_ids]
+        for job in new_jobs:
+            job.is_new = True
+    else:
+        new_jobs = store.upsert_jobs(jobs)
     outcome.new = len(new_jobs)
     new_ids = {job.id for job in new_jobs}
     log.info(
@@ -120,13 +136,18 @@ def scrape_search(
     )
     if first_run and not should_notify:
         seeded_ids = [job.id for job in new_jobs]
-        store.mark_notified(seeded_ids)
+        if not dry_run:
+            store.mark_notified(seeded_ids)
+        else:
+            for job in new_jobs:
+                job.is_new = False
         outcome.seeded = len(seeded_ids)
         log.info(
-            "[%s] first run: seeded %s existing job(s) silently; "
+            "[%s] first run: seeded %s existing job(s) silently%s; "
             "future unseen jobs will be notified",
             search.name,
             outcome.seeded,
+            " [dry-run]" if dry_run else "",
         )
     elif first_run:
         log.info(
@@ -134,7 +155,8 @@ def scrape_search(
             search.name,
             outcome.new,
         )
-    store.mark_search_run(search.name)
+    if not dry_run:
+        store.mark_search_run(search.name)
 
     if enrich and jobs:
         retry_ids = store.ids_missing_detail(jobs_by_id)
@@ -142,7 +164,8 @@ def scrape_search(
         for job in targets:
             try:
                 detail = client.get_detail(job)
-                store.update_detail(detail)
+                if not dry_run:
+                    store.update_detail(detail)
                 jobs_by_id[job.id] = detail
                 outcome.enriched += 1
             except Exception as exc:
@@ -205,6 +228,7 @@ def run_once(
                 max_pages=max_pages,
                 enrich=False if no_enrich else None,
                 notify_first_run=notify_first_run,
+                dry_run=dry_run,
             )
             summary.searches.append(outcome)
             summary.errors += outcome.errors
@@ -215,8 +239,11 @@ def run_once(
                 all_jobs[job.id] = job
 
         if all_jobs and summary.new_jobs > 0:
-            snapshot = write_snapshot(all_jobs.values(), config.output_dir, started_at)
-            summary.snapshots.append(str(snapshot))
+            if dry_run:
+                log.info("dry-run; snapshot skipped")
+            else:
+                snapshot = write_snapshot(all_jobs.values(), config.output_dir, started_at)
+                summary.snapshots.append(str(snapshot))
         elif all_jobs:
             log.info("no new jobs; snapshot skipped")
 
@@ -228,7 +255,12 @@ def run_once(
                 "Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID (or TELEGRAM_CHAT_IDS) in .env"
             )
         else:
-            pending = store.get_unnotified(limit=config.notify_max_jobs)
+            if dry_run:
+                pending = [job for job in all_jobs.values() if job.is_new][
+                    : config.notify_max_jobs
+                ]
+            else:
+                pending = store.get_unnotified(limit=config.notify_max_jobs)
             if pending:
                 try:
                     result = notifier.send_jobs(pending)
@@ -250,14 +282,15 @@ def run_once(
             else:
                 log.info("no pending jobs to notify")
 
-        store.record_run(
-            started_at=started_at,
-            searches=len(summary.searches),
-            scanned=summary.scanned,
-            new_jobs=summary.new_jobs,
-            notified=summary.notified,
-            errors=summary.errors,
-        )
+        if not dry_run:
+            store.record_run(
+                started_at=started_at,
+                searches=len(summary.searches),
+                scanned=summary.scanned,
+                new_jobs=summary.new_jobs,
+                notified=summary.notified,
+                errors=summary.errors,
+            )
     finally:
         store.close()
 
