@@ -78,8 +78,9 @@ def build_messages(
             current = "<b>JobStreetracer</b> · continued"
             current_ids = []
             separator = "\n\n"
-        if len(block) > max_chars:
-            block = block[: max_chars - 20] + "…"
+        available = max_chars - len(current) - len(separator)
+        if len(block) > available:
+            block = block[: max(0, available - 1)] + "…"
         current += separator + block
         current_ids.append(job.id)
 
