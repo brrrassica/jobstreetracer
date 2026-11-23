@@ -72,3 +72,12 @@ def test_send_jobs_does_not_mark_on_partial_failure(monkeypatch) -> None:
     with pytest.raises(NotificationError) as exc_info:
         notifier.send_jobs([make_job("1")])
     assert exc_info.value.sent_ids == []
+
+
+def test_build_messages_large_single_job_respects_max_chars() -> None:
+    jobs = [make_job("1", "First"), make_job("2", "A" * 5000)]
+    messages = build_messages(jobs, max_chars=300)
+
+    assert all(len(text) <= 300 for text, _ in messages)
+    ids = [job_id for _, job_ids in messages for job_id in job_ids]
+    assert ids == ["1", "2"]
