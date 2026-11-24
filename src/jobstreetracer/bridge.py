@@ -168,6 +168,31 @@ class BridgeHandler(SimpleHTTPRequestHandler):
         self._json(HTTPStatus.OK, feed)
 
     def _refresh(self, body: dict[str, Any]) -> None:
+        search = body.get("search")
+        if search is not None:
+            if not isinstance(search, list) or not all(
+                isinstance(item, str) and item.strip() for item in search
+            ):
+                self._json(
+                    HTTPStatus.BAD_REQUEST,
+                    {"error": "search must be null or a list of non-empty strings"},
+                )
+                return
+            search = search or None
+
+        max_pages = body.get("max_pages")
+        if max_pages is not None:
+            if (
+                isinstance(max_pages, bool)
+                or not isinstance(max_pages, int)
+                or max_pages < 1
+            ):
+                self._json(
+                    HTTPStatus.BAD_REQUEST,
+                    {"error": "max_pages must be null or an integer >= 1"},
+                )
+                return
+
         if not self.state.refresh_lock.acquire(blocking=False):
             self._json(
                 HTTPStatus.CONFLICT,
@@ -177,8 +202,8 @@ class BridgeHandler(SimpleHTTPRequestHandler):
         try:
             summary = run_once(
                 self.state.config_path,
-                search_names=body.get("search") or None,
-                max_pages=body.get("max_pages"),
+                search_names=search,
+                max_pages=max_pages,
                 no_enrich=bool(body.get("no_enrich")),
                 no_notify=bool(body.get("no_notify")),
             )

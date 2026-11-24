@@ -299,6 +299,63 @@ def test_refresh_error_is_internal_server_error(run_server, monkeypatch) -> None
     assert payload["error"] == "network down"
 
 
+def test_refresh_rejects_invalid_search_type(run_server, monkeypatch) -> None:
+    monkeypatch.setattr(bridge, "run_once", lambda *a, **k: FakeSummary())
+    server = run_server()
+    status, payload = server.post(
+        "/api/refresh",
+        body={"search": "foo"},
+        headers={"X-JSR-Bridge": "1"},
+    )
+    assert status == 400
+    assert "search" in payload["error"]
+
+
+def test_refresh_rejects_invalid_search_items(run_server, monkeypatch) -> None:
+    monkeypatch.setattr(bridge, "run_once", lambda *a, **k: FakeSummary())
+    server = run_server()
+    for bad in [[""], [1], ["ok", ""], ["ok", None]]:
+        status, payload = server.post(
+            "/api/refresh",
+            body={"search": bad},
+            headers={"X-JSR-Bridge": "1"},
+        )
+        assert status == 400, bad
+        assert "search" in payload["error"]
+
+
+def test_refresh_rejects_invalid_max_pages(run_server, monkeypatch) -> None:
+    monkeypatch.setattr(bridge, "run_once", lambda *a, **k: FakeSummary())
+    server = run_server()
+    for bad in ["1", 0, -1, 1.5, True, False, [1], {"n": 1}]:
+        status, payload = server.post(
+            "/api/refresh",
+            body={"max_pages": bad},
+            headers={"X-JSR-Bridge": "1"},
+        )
+        assert status == 400, bad
+        assert "max_pages" in payload["error"]
+
+
+def test_refresh_accepts_valid_search_and_max_pages(run_server, monkeypatch) -> None:
+    captured: dict[str, Any] = {}
+
+    def fake_run_once(config_path, **kwargs):
+        captured["kwargs"] = kwargs
+        return FakeSummary()
+
+    monkeypatch.setattr(bridge, "run_once", fake_run_once)
+    server = run_server()
+    status, _payload = server.post(
+        "/api/refresh",
+        body={"search": ["python", "go"], "max_pages": 2},
+        headers={"X-JSR-Bridge": "1"},
+    )
+    assert status == 200
+    assert captured["kwargs"]["search_names"] == ["python", "go"]
+    assert captured["kwargs"]["max_pages"] == 2
+
+
 # --------------------------------------------------------------------------
 # /api/telegram
 # --------------------------------------------------------------------------
