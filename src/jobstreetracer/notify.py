@@ -52,6 +52,25 @@ def _job_block(job: Job) -> str:
     return "\n".join(lines)
 
 
+def _plain_block(job: Job) -> str:
+    """Markup-free fallback block (title + URL) safe to truncate anywhere."""
+    lines = [html.escape(job.title or "Untitled job")]
+    if job.url:
+        lines.append(html.escape(job.url, quote=True))
+    return "\n".join(lines)
+
+
+def _truncate_plain(text: str, limit: int) -> str:
+    """Truncate escaped plain text to `limit` chars without splitting an entity."""
+    if len(text) <= limit:
+        return text
+    cut = text[: max(0, limit - 1)]
+    ampersand = cut.rfind("&")
+    if ampersand > cut.rfind(";"):
+        cut = cut[:ampersand]
+    return cut.rstrip() + "…"
+
+
 def build_messages(
     jobs: Iterable[Job],
     *,
@@ -80,7 +99,12 @@ def build_messages(
             separator = "\n\n"
         available = max_chars - len(current) - len(separator)
         if len(block) > available:
-            block = block[: max(0, available - 1)] + "…"
+            # Don't slice HTML: a cut inside a tag or entity makes the whole
+            # message unparseable for Telegram. Emit a markup-free block
+            # (title + URL) truncated safely instead.
+            plain = _plain_block(job)
+            plain_limit = available - (len(separator) if current else 0)
+            block = _truncate_plain(plain, max(0, plain_limit - 1))
         current += separator + block
         current_ids.append(job.id)
 
@@ -134,7 +158,12 @@ class TelegramNotifier:
                 try:
                     self._send_message(message, chat_id=chat_id)
                 except NotificationError as exc:
-                    raise NotificationError(str(exc), sent_ids=result.sent_ids) from exc
+                    # Some chats may already have this message; record its ids
+                    # so the runner marks them notified and no chat gets a
+                    # duplicate on the next run. Over-marking beats re-sending.
+                    raise NotificationError(
+                        str(exc), sent_ids=result.sent_ids + ids
+                    ) from exc
             result.sent_ids.extend(ids)
             result.messages += 1
             time.sleep(0.4)

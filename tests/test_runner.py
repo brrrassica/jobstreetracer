@@ -68,6 +68,37 @@ def test_notify_first_run_keeps_backlog_pending(tmp_path) -> None:
         store.close()
 
 
+def test_dry_run_pending_includes_stored_unnotified_backlog(tmp_path) -> None:
+    """Dry-run pending selection must mirror get_unnotified: stored jobs that
+    were never notified (e.g. --no-notify runs) belong in the preview."""
+    store = JobStore(tmp_path / "jobs.db")
+    try:
+        # Real run with notifications disabled leaves the job pending.
+        client = FakeClient([make_job("1")])
+        scrape_search(client, store, search(), notify_first_run=True)
+        assert {job.id for job in store.get_unnotified()} == {"1"}
+
+        # Dry-run with the same job re-scraped plus a new one: the stored
+        # backlog job must be selected alongside the fresh one.
+        client.jobs = [make_job("1"), make_job("2")]
+        jobs, _ = scrape_search(client, store, search(), dry_run=True)
+
+        assert store.unnotified_ids() == {"1"}
+
+        # Reproduce the run_once dry-run pending selection.
+        all_jobs = {job.id: job for job in jobs}
+        unnotified = store.unnotified_ids()
+        backlog = sorted(
+            (job for job in all_jobs.values() if job.id in unnotified),
+            key=lambda job: job.first_seen,
+        )
+        fresh = [job for job in all_jobs.values() if job.is_new]
+        pending = (backlog + fresh)[:40]
+        assert [job.id for job in pending] == ["1", "2"]
+    finally:
+        store.close()
+
+
 def test_first_run_state_is_per_search(tmp_path) -> None:
     store = JobStore(tmp_path / "jobs.db")
     try:

@@ -376,6 +376,12 @@ class JobStore:
             missing.update(row["id"] for row in rows)
         return missing
 
+    def unnotified_ids(self) -> set[str]:
+        rows = self.conn.execute(
+            "SELECT id FROM jobs WHERE notified_at IS NULL ORDER BY first_seen ASC"
+        ).fetchall()
+        return {row["id"] for row in rows}
+
     def get_unnotified(self, limit: int = 40) -> list[Job]:
         rows = self.conn.execute(
             "SELECT * FROM jobs WHERE notified_at IS NULL ORDER BY first_seen ASC LIMIT ?",
