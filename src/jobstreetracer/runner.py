@@ -256,9 +256,16 @@ def run_once(
             )
         else:
             if dry_run:
-                pending = [job for job in all_jobs.values() if job.is_new][
-                    : config.notify_max_jobs
-                ]
+                # Mirror the real run's selection: stored-but-unnotified jobs
+                # (backlog, oldest first) plus genuinely new ones, capped like
+                # get_unnotified.
+                unnotified = store.unnotified_ids()
+                backlog = sorted(
+                    (job for job in all_jobs.values() if job.id in unnotified),
+                    key=lambda job: job.first_seen,
+                )
+                fresh = [job for job in all_jobs.values() if job.is_new]
+                pending = (backlog + fresh)[: config.notify_max_jobs]
             else:
                 pending = store.get_unnotified(limit=config.notify_max_jobs)
             if pending:
